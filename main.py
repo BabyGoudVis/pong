@@ -12,8 +12,8 @@ WIDTH, HEIGHT = 1280, 720
 
 WHITE = (255, 255, 255)
 BLACK = (25, 25, 25)
-VELOCITY = WIDTH / 2  # xCord moves 600/s
-BASE_BALL_VELOCITY = 600 / FPS
+VELOCITY = 600  # pixels / s
+BASE_BALL_VELOCITY = 300  # pixels / s
 
 pygame.init()
 pygame.display.set_caption("pong pong pong!")
@@ -34,8 +34,8 @@ with open(filename, 'r') as f:
 
 class Platform:
     def __init__(self):
-        self.width = WIDTH / 5
-        self.height = HEIGHT / 50
+        self.width = WIDTH / 4
+        self.height = HEIGHT / 70
         self.x = (WIDTH - self.width) / 2
         self.y = (HEIGHT / 5) * 4
         self.velocity = VELOCITY / FPS
@@ -56,8 +56,8 @@ class Ball:
         self.radius = 10
         self.x = WIDTH / 2
         self.y = HEIGHT / 5
-        self.angle = 160
-        self.BaseVelocity = BASE_BALL_VELOCITY
+        self.angle = randint(0, 180)
+        self.BaseVelocity = BASE_BALL_VELOCITY / FPS
         self.xVelocity = 0
         self.yVelocity = 0
         self.ball = pygame.Rect(self.x, self.y, self.radius, self.radius)
@@ -71,7 +71,8 @@ class Ball:
             ball.angle -= 360
         if ball.angle < 0:
             ball.angle += 360
-        ball.BaseVelocity = BASE_BALL_VELOCITY ** (1 + (counter // 5) / 5)
+        ball.BaseVelocity = (BASE_BALL_VELOCITY /
+                             FPS) ** (1 + (counter // 5) / 5)
 
     def draw(self):
         pygame.draw.rect(surface, WHITE, self.ball)
@@ -111,11 +112,12 @@ def drawing():
 
 
 def getCollition(platform, ball, counter):
-    collisionTolerance = 10
+    collisionTolerance = ball.BaseVelocity * 1.1
     if ball.ball.left <= 0 or ball.ball.right >= WIDTH:
-        ball.angle = 180 - ball.angle
+        ball.angle = 180 - ball.angle - randint(-5, 5)
     if ball.ball.top <= 0:
         ball.angle *= -1
+        ball.angle == randint(-5, 5)
     if platform.platform.colliderect(ball.ball):
         if abs(platform.platform.top - ball.ball.bottom) <= collisionTolerance:
             ball.angle *= -1
