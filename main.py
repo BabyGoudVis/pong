@@ -22,6 +22,15 @@ clock = pygame.time.Clock()
 
 baseFont = pygame.font.SysFont("Arial", int(HEIGHT / 10))
 
+playButton = pygame.Rect((WIDTH * 0.76875)/2 - 20, HEIGHT / 2 - 20,
+                         WIDTH * 0.23125 + 40, int(HEIGHT / 10) + 40)
+
+filename = 'data.json'
+with open(filename, 'r') as f:
+    data = json.load(f)
+    highScore = data['highscore']
+    newHighscore = data['newHighscore']
+
 
 class Platform:
     def __init__(self):
@@ -70,23 +79,39 @@ class Ball:
 
 def drawing():
     surface.fill(BLACK)
-    platform.draw()
-    ball.draw()
+    match status:
+        case "home":
+            text_surface = baseFont.render(
+                f"High Score: {highScore}", True, WHITE)
+            surface.blit(text_surface, (WIDTH / 100, HEIGHT / 100))
+            text_surface = baseFont.render("New Game", True, WHITE)
+            surface.blit(text_surface, ((WIDTH * 0.76875)/2, HEIGHT / 2))
+            pygame.draw.rect(surface, WHITE, playButton, 2)
+        case "game":
+            text_surface = baseFont.render(
+                f"Score: {scoreMessage}", True, WHITE)
+            surface.blit(text_surface, (WIDTH / 100, HEIGHT / 100))
+            platform.draw()
+            ball.draw()
+        case "game over" | "waiting":
+            text_surface = baseFont.render("Game over!", True, WHITE)
+            surface.blit(text_surface, (WIDTH / 5, HEIGHT // 4))
+            if newHighscore:
+                text_surface = baseFont.render(
+                    f"Score: {counter}     New High Score!!", True, WHITE)
+            else:
+                text_surface = baseFont.render(
+                    f"Score: {counter}     High Score: {highScore}", True, WHITE)
+            surface.blit(text_surface, (WIDTH / 5, HEIGHT // 3))
+            text_surface = baseFont.render(
+                f"Press space to go to home screen", True, WHITE)
+            surface.blit(text_surface, (WIDTH / 5, HEIGHT // 2))
 
-    if counter < 0:
-        text_surface = baseFont.render(f"Game over: {endScore}", True, WHITE)
-        surface.blit(text_surface, (WIDTH / 3, HEIGHT / 3))
-        text_surface = baseFont.render(
-            f"Press space to play again", True, WHITE)
-        surface.blit(text_surface, (WIDTH / 3, HEIGHT / 2))
-    else:
-        text_surface = baseFont.render(f"Score: {scoreMessage}", True, WHITE)
-        surface.blit(text_surface, (WIDTH / 100, HEIGHT / 100))
     pygame.display.update()
 
 
 def getCollition(platform, ball, counter):
-    collisionTolerance = 5
+    collisionTolerance = 10
     if ball.ball.left <= 0 or ball.ball.right >= WIDTH:
         ball.angle = 180 - ball.angle
     if ball.ball.top <= 0:
@@ -100,10 +125,8 @@ def getCollition(platform, ball, counter):
         if abs(platform.platform.left - ball.ball.right) <= collisionTolerance:
             ball.angle = 180 - ball.angle
     if ball.ball.bottom >= HEIGHT:
-        endScore = counter
-        return -1, endScore
-    endScore = counter
-    return counter, counter
+        return counter, "game over"
+    return counter, "game"
 
 
 def handleMovementPlatform():
@@ -134,37 +157,48 @@ platform = Platform()
 ball = Ball()
 counter = 0
 
+status = "home"
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT or pygame.key.get_pressed()[pygame.K_ESCAPE]:
             pygame.quit()
             sys.exit()
-
-    if counter < 0:
-        scoreMessage = "Game Over"
-        if gameOver():
-            filename = 'data.json'
+        if event.type == pygame.MOUSEBUTTONDOWN and status == "home":
+            if playButton.collidepoint(event.pos):
+                counter = 0
+                del ball, platform
+                platform = Platform()
+                ball = Ball()
+                sleep(0.5)
+                status = "game"
+    match status:
+        case "game":
+            handleMovementPlatform()
+            platform.checkPosition()
+            counter, status = getCollition(platform, ball, counter)
+            ball.movement(ball.angle)
+            scoreMessage = counter
+        case "game over":
+            scoreMessage = "Game Over"
             with open(filename, 'r') as f:
                 data = json.load(f)
                 highScore = data['highscore']
-                if endScore > highScore:
-                    data['highscore'] = endScore
-                    highScore = endScore
+                if counter > highScore:
+                    data['highscore'] = counter
+                    data['newHighscore'] = True
+                    highScore = counter
+                else:
+                    data['newHighscore'] = False
+                newHighscore = data['newHighscore']
 
             os.remove(filename)
             with open(filename, 'w') as f:
                 json.dump(data, f, indent=4)
-
-            sleep(1)
-            counter = 0
-            del ball, platform
-            platform = Platform()
-            ball = Ball()
-    else:
-        handleMovementPlatform()
-        platform.checkPosition()
-        counter, endScore = getCollition(platform, ball, counter)
-        ball.movement(ball.angle)
-        scoreMessage = counter
+            status = "waiting"
+        case "waiting":
+            if gameOver():
+                status = "home"
+    # print(f"Status: {status}")
     drawing()
     clock.tick(FPS)
