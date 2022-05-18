@@ -3,19 +3,21 @@ import sys
 from random import *
 from math import cos, radians, sin
 
-from pyrsistent import b
 FPS = 60
 WIDTH, HEIGHT = 1280, 720
 
 
 WHITE = (255, 255, 255)
 BLACK = (25, 25, 25)
-VELOCITY = 600  # xCord moves 600/s
+VELOCITY = WIDTH / 2  # xCord moves 600/s
+BASE_BALL_VELOCITY = 300 / FPS
 
 pygame.init()
 pygame.display.set_caption("pong pong pong!")
 surface = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
+
+baseFont = pygame.font.SysFont("Arial", int(HEIGHT / 10))
 
 
 class Platform:
@@ -43,7 +45,7 @@ class Ball:
         self.x = WIDTH / 2
         self.y = HEIGHT / 5
         self.angle = 160
-        self.BaseVelocity = 10
+        self.BaseVelocity = BASE_BALL_VELOCITY
         self.xVelocity = 0
         self.yVelocity = 0
         self.ball = pygame.Rect(self.x, self.y, self.radius, self.radius)
@@ -57,6 +59,7 @@ class Ball:
             ball.angle -= 360
         if ball.angle < 0:
             ball.angle += 360
+        ball.BaseVelocity = BASE_BALL_VELOCITY ** (1 + (counter // 5) / 5)
 
     def draw(self):
         pygame.draw.rect(surface, WHITE, self.ball)
@@ -66,6 +69,8 @@ def drawing():
     surface.fill(BLACK)
     platform.draw()
     ball.draw()
+    text_surface = baseFont.render(f"Score: {counter}", True, WHITE)
+    surface.blit(text_surface, (WIDTH / 100, HEIGHT / 100))
     pygame.display.update()
 
 
@@ -79,9 +84,31 @@ def getCollition(platform, ball, counter):
         if abs(platform.platform.top - ball.ball.bottom) <= collisionTolerance:
             ball.angle *= -1
             counter += 1
+        if abs(platform.platform.right - ball.ball.left) <= collisionTolerance:
+            ball.angle = 180 - ball.angle
+        if abs(platform.platform.left - ball.ball.right) <= collisionTolerance:
+            ball.angle = 180 - ball.angle
     if ball.ball.bottom >= HEIGHT:
-        return "LOST"
+        return -1
     return counter
+
+
+def handleMovementPlatform():
+    leftPressed = False
+    rightPressed = False
+    if pygame.key.get_pressed()[pygame.K_q] or pygame.key.get_pressed()[pygame.K_LEFT]:
+        leftPressed = True
+    if pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_RIGHT]:
+        rightPressed = True
+    if not (leftPressed and rightPressed):
+        if leftPressed:
+            platform.platform.x -= platform.velocity
+        elif rightPressed:
+            platform.platform.x += platform.velocity
+
+    if pygame.mouse.get_pressed()[0]:
+        xMouse, yMouse = pygame.mouse.get_pos()
+        platform.platform.x = xMouse - platform.width / 2
 
 
 platform = Platform()
@@ -90,16 +117,12 @@ counter = 0
 
 while True:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or pygame.key.get_pressed()[pygame.K_ESCAPE]:
             pygame.quit()
             sys.exit()
-    if pygame.key.get_pressed()[pygame.K_d]:
-        platform.platform.x += platform.velocity
-    if pygame.key.get_pressed()[pygame.K_q]:
-        platform.platform.x -= platform.velocity
+    handleMovementPlatform()
     platform.checkPosition()
     counter = getCollition(platform, ball, counter)
-    print(counter)
     ball.movement(ball.angle)
     drawing()
     clock.tick(FPS)
