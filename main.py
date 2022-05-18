@@ -1,5 +1,7 @@
 import pygame
 import sys
+import json
+import os
 from random import *
 from math import cos, radians, sin
 from time import sleep
@@ -11,7 +13,7 @@ WIDTH, HEIGHT = 1280, 720
 WHITE = (255, 255, 255)
 BLACK = (25, 25, 25)
 VELOCITY = WIDTH / 2  # xCord moves 600/s
-BASE_BALL_VELOCITY = 300 / FPS
+BASE_BALL_VELOCITY = 600 / FPS
 
 pygame.init()
 pygame.display.set_caption("pong pong pong!")
@@ -141,6 +143,16 @@ while True:
     if counter < 0:
         scoreMessage = "Game Over"
         if gameOver():
+            filename = 'data.json'
+            with open(filename, 'r') as f:
+                data = json.load(f)
+                if endScore > data['highscore']:
+                    data['highscore'] = endScore
+
+            os.remove(filename)
+            with open(filename, 'w') as f:
+                json.dump(data, f, indent=4)
+
             sleep(1)
             counter = 0
             del ball, platform
