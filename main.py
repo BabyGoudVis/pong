@@ -146,8 +146,10 @@ while True:
             filename = 'data.json'
             with open(filename, 'r') as f:
                 data = json.load(f)
-                if endScore > data['highscore']:
+                highScore = data['highscore']
+                if endScore > highScore:
                     data['highscore'] = endScore
+                    highScore = endScore
 
             os.remove(filename)
             with open(filename, 'w') as f:
