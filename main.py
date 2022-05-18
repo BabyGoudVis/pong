@@ -2,6 +2,7 @@ import pygame
 import sys
 from random import *
 from math import cos, radians, sin
+from time import sleep
 
 FPS = 60
 WIDTH, HEIGHT = 1280, 720
@@ -69,8 +70,16 @@ def drawing():
     surface.fill(BLACK)
     platform.draw()
     ball.draw()
-    text_surface = baseFont.render(f"Score: {counter}", True, WHITE)
-    surface.blit(text_surface, (WIDTH / 100, HEIGHT / 100))
+
+    if counter < 0:
+        text_surface = baseFont.render(f"Game over: {endScore}", True, WHITE)
+        surface.blit(text_surface, (WIDTH / 3, HEIGHT / 3))
+        text_surface = baseFont.render(
+            f"Press space to play again", True, WHITE)
+        surface.blit(text_surface, (WIDTH / 3, HEIGHT / 2))
+    else:
+        text_surface = baseFont.render(f"Score: {scoreMessage}", True, WHITE)
+        surface.blit(text_surface, (WIDTH / 100, HEIGHT / 100))
     pygame.display.update()
 
 
@@ -89,8 +98,10 @@ def getCollition(platform, ball, counter):
         if abs(platform.platform.left - ball.ball.right) <= collisionTolerance:
             ball.angle = 180 - ball.angle
     if ball.ball.bottom >= HEIGHT:
-        return -1
-    return counter
+        endScore = counter
+        return -1, endScore
+    endScore = counter
+    return counter, counter
 
 
 def handleMovementPlatform():
@@ -111,6 +122,12 @@ def handleMovementPlatform():
         platform.platform.x = xMouse - platform.width / 2
 
 
+def gameOver():
+    if pygame.key.get_pressed()[pygame.K_SPACE]:
+        return True
+    return False
+
+
 platform = Platform()
 ball = Ball()
 counter = 0
@@ -120,9 +137,20 @@ while True:
         if event.type == pygame.QUIT or pygame.key.get_pressed()[pygame.K_ESCAPE]:
             pygame.quit()
             sys.exit()
-    handleMovementPlatform()
-    platform.checkPosition()
-    counter = getCollition(platform, ball, counter)
-    ball.movement(ball.angle)
+
+    if counter < 0:
+        scoreMessage = "Game Over"
+        if gameOver():
+            sleep(1)
+            counter = 0
+            del ball, platform
+            platform = Platform()
+            ball = Ball()
+    else:
+        handleMovementPlatform()
+        platform.checkPosition()
+        counter, endScore = getCollition(platform, ball, counter)
+        ball.movement(ball.angle)
+        scoreMessage = counter
     drawing()
     clock.tick(FPS)
