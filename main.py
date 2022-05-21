@@ -14,6 +14,7 @@ class Game:
     FPS = 60
     WIDTH = 1280
     HEIGHT = 720
+    clock = pygame.time.Clock()
 
     @staticmethod
     def get_fps():
@@ -55,7 +56,8 @@ class Ball:
         self.radius = 10
         self.x = Game.WIDTH / 2
         self.y = Game.HEIGHT / 5
-        self.angle = randint(0, 180)
+        # self.angle = randint(0, 180)
+        self.angle = 90
         self.BaseVelocity = Ball.BASE_BALL_VELOCITY / Game.FPS
         self.xVelocity = 0
         self.yVelocity = 0
@@ -72,6 +74,8 @@ class Ball:
             ball.angle += 360
         ball.BaseVelocity = (Ball.BASE_BALL_VELOCITY /
                              Game.FPS) ** (1 + (counter // 5) / 5)
+        if ball.BaseVelocity > (Ball.BASE_BALL_VELOCITY / Game.FPS) ** 2:
+            ball.BaseVelocity = (Ball.BASE_BALL_VELOCITY / Game.FPS) ** 2
 
     def draw(self):
         pygame.draw.rect(surface, WHITE, self.ball)
@@ -85,7 +89,7 @@ game = Game()
 pygame.init()
 pygame.display.set_caption("pong pong pong!")
 surface = pygame.display.set_mode((Game.WIDTH, Game.HEIGHT))
-clock = pygame.time.Clock()
+
 
 baseFont = pygame.font.SysFont("Arial", int(Game.HEIGHT / 10))
 
@@ -111,9 +115,13 @@ def drawing():
                 text_surface, ((Game.WIDTH * 0.76875)/2, Game.HEIGHT / 2))
             pygame.draw.rect(surface, WHITE, playButton, 2)
         case "game":
-            text_surface = baseFont.render(
+            scoreText = baseFont.render(
                 f"Score: {scoreMessage}", True, WHITE)
-            surface.blit(text_surface, (Game.WIDTH / 100, Game.HEIGHT / 100))
+            surface.blit(scoreText, (Game.WIDTH / 100, Game.HEIGHT / 100))
+            debugText = baseFont.render(
+                f"Velocity: {ball.BaseVelocity}", True, (50, 50, 50))
+            surface.blit(debugText, (Game.WIDTH /
+                         100, Game.HEIGHT / 100 + 72))
             platform.draw()
             ball.draw()
         case "game over" | "waiting":
@@ -134,14 +142,14 @@ def drawing():
 
 
 def getCollition(platform, ball, counter):
-    collisionTolerance = ball.BaseVelocity * 1.1
+    collisionTolerance = ball.BaseVelocity
     if ball.ball.left <= 0 or ball.ball.right >= Game.WIDTH:
         ball.angle = 180 - ball.angle - randint(-5, 5)
     if ball.ball.top <= 0:
         ball.angle *= -1
-        ball.angle == randint(-5, 5)
+        ball.angle += randint(-5, 5)
     if platform.platform.colliderect(ball.ball):
-        if abs(platform.platform.top - ball.ball.bottom) <= collisionTolerance:
+        if abs(platform.platform.top - ball.ball.bottom) <= collisionTolerance * 2:
             ball.angle *= -1
             counter += 1
         if abs(platform.platform.right - ball.ball.left) <= collisionTolerance:
@@ -221,6 +229,5 @@ while True:
         case "waiting":
             if gameOver():
                 status = "home"
-    # print(f"Status: {status}")
     drawing()
-    clock.tick(Game.FPS)
+    Game.clock.tick(Game.FPS)
