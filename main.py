@@ -8,6 +8,7 @@ from time import sleep
 
 WHITE = (255, 255, 255)
 BLACK = (25, 25, 25)
+GRAY = (50, 50, 50)
 
 
 class Game:
@@ -56,8 +57,8 @@ class Ball:
         self.radius = 10
         self.x = Game.WIDTH / 2
         self.y = Game.HEIGHT / 5
-        # self.angle = randint(0, 180)
-        self.angle = 90
+        self.angle = randint(0, 180)
+        # self.angle = 90
         self.BaseVelocity = Ball.BASE_BALL_VELOCITY / Game.FPS
         self.xVelocity = 0
         self.yVelocity = 0
@@ -95,25 +96,50 @@ baseFont = pygame.font.SysFont("Arial", int(Game.HEIGHT / 10))
 
 playButton = pygame.Rect((Game.WIDTH * 0.76875)/2 - 20, Game.HEIGHT / 2 - 20,
                          Game.WIDTH * 0.23125 + 40, int(Game.HEIGHT / 10) + 40)
+controlButton = pygame.Rect(
+    Game.WIDTH / 200, baseFont.get_height() * 1.15, 240, baseFont.get_height() * 0.9)
+homeButton = pygame.Rect(
+    Game.WIDTH / 200, Game.HEIGHT / 70, 320, baseFont.get_height() * 0.9)
+changeMovementLeftButton = pygame.Rect(
+    Game.WIDTH / 2.25, Game.HEIGHT / 3, 320, baseFont.get_height() * 1)
+changeMovementRightButton = pygame.Rect(
+    Game.WIDTH / 2.25, Game.HEIGHT / 2, 320, baseFont.get_height() * 1)
+
+leftButtonActive = False
+rightButtonActive = False
+colorLeftButton = GRAY
+colorRightButton = GRAY
+
 
 filename = 'data.json'
 with open(filename, 'r') as f:
     data = json.load(f)
     highScore = data['highscore']
     newHighscore = data['newHighscore']
+    leftButtonName = data['leftButtonName']
+    rightButtonName = data['rightButtonName']
+    leftButtonCode = data['leftButtonCode']
+    rightButtonCode = data['rightButtonCode']
 
 
 def drawing():
     surface.fill(BLACK)
     match status:
         case "home":
-            text_surface = baseFont.render(
+            highscoreText = baseFont.render(
                 f"High Score: {highScore}", True, WHITE)
-            surface.blit(text_surface, (Game.WIDTH / 100, Game.HEIGHT / 100))
-            text_surface = baseFont.render("New Game", True, WHITE)
+            surface.blit(highscoreText, (Game.WIDTH / 100, Game.HEIGHT / 100))
+
+            newgameText = baseFont.render("New Game", True, WHITE)
             surface.blit(
-                text_surface, ((Game.WIDTH * 0.76875)/2, Game.HEIGHT / 2))
+                newgameText, ((Game.WIDTH * 0.76875)/2, Game.HEIGHT / 2))
             pygame.draw.rect(surface, WHITE, playButton, 2)
+
+            controlsText = baseFont.render("Controls", True, WHITE)
+            surface.blit(controlsText, (Game.WIDTH / 100,
+                         Game.HEIGHT / 100 + baseFont.get_height()))
+            pygame.draw.rect(surface, WHITE, controlButton, 2)
+
         case "game":
             scoreText = baseFont.render(
                 f"Score: {scoreMessage}", True, WHITE)
@@ -137,7 +163,25 @@ def drawing():
             text_surface = baseFont.render(
                 f"Press space to go to home screen", True, WHITE)
             surface.blit(text_surface, (Game.WIDTH / 5, Game.HEIGHT // 2))
+        case "controls":
+            homeText = baseFont.render("Home", True, WHITE)
+            surface.blit(homeText, (Game.WIDTH / 100,
+                         Game.HEIGHT / 100))
+            pygame.draw.rect(surface, WHITE, homeButton, 2)
 
+            leftText = baseFont.render(
+                f"left:    {leftButtonName}", True, WHITE)
+            surface.blit(leftText, (Game.WIDTH / 3,
+                         Game.HEIGHT / 3.05))
+            pygame.draw.rect(surface, colorLeftButton,
+                             changeMovementLeftButton, 2)
+
+            rightText = baseFont.render(
+                f"right:   {rightButtonName}", True, WHITE)
+            surface.blit(rightText, (Game.WIDTH / 3,
+                         Game.HEIGHT / 2.03))
+            pygame.draw.rect(surface, colorRightButton,
+                             changeMovementRightButton, 2)
     pygame.display.update()
 
 
@@ -164,9 +208,9 @@ def getCollition(platform, ball, counter):
 def handleMovementPlatform():
     leftPressed = False
     rightPressed = False
-    if pygame.key.get_pressed()[pygame.K_q] or pygame.key.get_pressed()[pygame.K_LEFT]:
+    if pygame.key.get_pressed()[leftButtonCode] or pygame.key.get_pressed()[pygame.K_LEFT]:
         leftPressed = True
-    if pygame.key.get_pressed()[pygame.K_d] or pygame.key.get_pressed()[pygame.K_RIGHT]:
+    if pygame.key.get_pressed()[rightButtonCode] or pygame.key.get_pressed()[pygame.K_RIGHT]:
         rightPressed = True
     if not (leftPressed and rightPressed):
         if leftPressed:
@@ -194,14 +238,57 @@ while True:
         if event.type == pygame.QUIT or pygame.key.get_pressed()[pygame.K_ESCAPE]:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.MOUSEBUTTONDOWN and status == "home":
-            if playButton.collidepoint(event.pos):
-                counter = 0
-                del ball, platform
-                platform = Platform()
-                ball = Ball()
-                sleep(0.5)
-                status = "game"
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if status == "home":
+                if playButton.collidepoint(event.pos):
+                    counter = 0
+                    del ball, platform
+                    platform = Platform()
+                    ball = Ball()
+                    sleep(0.5)
+                    status = "game"
+                if controlButton.collidepoint(event.pos):
+                    status = "controls"
+            if status == "controls":
+                if homeButton.collidepoint(event.pos):
+                    status = "home"
+                if changeMovementLeftButton.collidepoint(event.pos):
+                    if leftButtonActive:
+                        leftButtonActive = False
+                        colorLeftButton = GRAY
+                    else:
+                        leftButtonActive = True
+                        colorLeftButton = WHITE
+                        rightButtonActive = False
+                        colorRightButton = GRAY
+                if changeMovementRightButton.collidepoint(event.pos):
+                    if rightButtonActive:
+                        rightButtonActive = False
+                        colorRightButton = GRAY
+                    else:
+                        rightButtonActive = True
+                        colorRightButton = WHITE
+                        leftButtonActive = False
+                        colorLeftButton = GRAY
+        if status == "controls":
+            if event.type == pygame.KEYDOWN:
+                keyPressedName = pygame.key.name(event.key)
+                keyPressedCode = event.key
+                # print(keyPressedName, event.key)
+                if rightButtonActive:
+                    rightButtonName = keyPressedName
+                    rightButtonCode = keyPressedCode
+                    data['rightButtonName'] = keyPressedName
+                    data['rightButtonCode'] = keyPressedCode
+                if leftButtonActive:
+                    leftButtonName = keyPressedName
+                    leftButtonCode = keyPressedCode
+                    data['leftButtonName'] = keyPressedName
+                    data['leftButtonCode'] = keyPressedCode
+
+                os.remove(filename)
+                with open(filename, 'w') as f:
+                    json.dump(data, f, indent=4)
     match status:
         case "game":
             handleMovementPlatform()
