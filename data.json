@@ -1,4 +1,8 @@
 {
-    "highscore": 29,
-    "newHighscore": true
+    "highscore": 33,
+    "newHighscore": true,
+    "leftButtonName": "q",
+    "rightButtonName": "d",
+    "leftButtonCode": 113,
+    "rightButtonCode": 100
 }
