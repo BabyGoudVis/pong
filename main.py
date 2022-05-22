@@ -99,7 +99,7 @@ playButton = pygame.Rect((Game.WIDTH * 0.76875)/2 - 20, Game.HEIGHT / 2 - 20,
 controlButton = pygame.Rect(
     Game.WIDTH / 200, baseFont.get_height() * 1.15, 240, baseFont.get_height() * 0.9)
 homeButton = pygame.Rect(
-    Game.WIDTH / 200, Game.HEIGHT / 70, 320, baseFont.get_height() * 0.9)
+    Game.WIDTH / 200, Game.HEIGHT / 70, 180, baseFont.get_height() * 0.9)
 changeMovementLeftButton = pygame.Rect(
     Game.WIDTH / 2.25, Game.HEIGHT / 3, 320, baseFont.get_height() * 1)
 changeMovementRightButton = pygame.Rect(
